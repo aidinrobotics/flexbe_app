@@ -11,7 +11,7 @@ IO.BehaviorSaver = new (function() {
 		};
 		var names = Behavior.createNames();
 		var package_name = names.rosnode_name;
-		ROS.getPackagePythonPath(package_name, (folder_path) => {
+		ROS.getPackageCodePath(package_name, (folder_path) => {
 			var file_path = path.join(folder_path, names.file_name);
 			var file_tmp_path = path.join(folder_path, names.file_name_tmp);
 			if (RC.Controller.isConnected()) {
@@ -49,8 +49,14 @@ IO.BehaviorSaver = new (function() {
 				callback();
 			});
 		} else {
-			ROS.getPackagePath(package_name, (package_path) => {
-				var folder_path = path.join(package_path, 'lib', package_name, 'manifest');
+			// ROS.getPackagePath(package_name, (package_path) => {
+			// 	var folder_path = path.join(package_path, 'lib', package_name, 'manifest');
+			// 	IO.Filesystem.createFile(folder_path, names.manifest_name, generated_manifest, function() {
+			// 		callback();
+			// 	});
+			// });
+			ROS.getPackageSrcPath(package_name, (package_path) => {
+				var folder_path = path.join(package_path, 'manifest');
 				IO.Filesystem.createFile(folder_path, names.manifest_name, generated_manifest, function() {
 					callback();
 				});

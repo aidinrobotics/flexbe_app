@@ -33,6 +33,20 @@ import sys
 from ament_index_python.packages import get_packages_with_prefixes, get_package_share_directory
 import xml.etree.ElementTree as ET
 
+def map_installs_to_src(pkg_names, workspace_dirs):
+    src_map = {}
+    for workspace_dir in workspace_dirs:
+        if not os.access(workspace_dir, os.W_OK):
+            # print(f"[INFO] Skipping workspace (no write permission): {workspace_dir}")
+            continue
+        result = subprocess.check_output(['colcon', 'list'], cwd=workspace_dir).decode()
+        lines = result.strip().splitlines()
+        for line in lines:
+            name, path, _ = line.strip().split(maxsplit=2)
+            if name in pkg_names:
+                src_map[name] = os.path.join(workspace_dir, path)
+    return src_map
+
 def check_for_relevance(pkg_name, pkg_share_path):
 
     package_xml_path = os.path.join(pkg_share_path, "share", pkg_name, "package.xml")
@@ -54,7 +68,6 @@ def check_for_relevance(pkg_name, pkg_share_path):
 def find_flexbe_packages():
 
     pkg_list = get_packages_with_prefixes()
-
     flexbe_packages = []
 
     for pkg_name, pkg_path in pkg_list.items():
@@ -62,8 +75,18 @@ def find_flexbe_packages():
 
         if has_states or has_behaviors:
             package = {"name": pkg_name, "path": pkg_path, "python_path": None}
+            
             flexbe_packages.append(package)
+            
+    pkg_names = [pkg["name"] for pkg in flexbe_packages]
+    workspace_dirs = list(set([pkg["path"].split("/install")[0] for pkg in flexbe_packages]))
+    src_map = map_installs_to_src(pkg_names, workspace_dirs)
 
+    for pkg in flexbe_packages:
+        pkg_name = pkg["name"]
+        if pkg_name in src_map:
+            pkg["src_path"] = src_map[pkg_name]
+            pkg["code_path"] = os.path.join(pkg["src_path"], pkg_name)
     return flexbe_packages
 
 if __name__ == "__main__":
@@ -73,7 +96,6 @@ if __name__ == "__main__":
     with open(dump_path, "wt") as dump:
             dump.write(json.dumps(flexbe_packages, sort_keys=True, indent=2))
     #-----------------------------------------------------------
-
     sys.stdout.write(json.dumps(flexbe_packages))
 `;
 // END Python implementation
@@ -155,12 +177,38 @@ if __name__ == "__main__":
 		}
 	}
 
+	that.getPackageSrcPath = function(package_name, callback) {
+		that.getPackageList((package_cache) => {
+			var package_path = undefined;
+			for (var i=0; i<package_cache.length; i++) {
+				if (package_cache[i]['name'] == package_name) {
+					package_path = package_cache[i]['src_path'];
+					break;
+				}
+			}
+			callback(package_path);
+		});
+	}
+
 	that.getPackagePath = function(package_name, callback) {
 		that.getPackageList((package_cache) => {
 			var package_path = undefined;
 			for (var i=0; i<package_cache.length; i++) {
 				if (package_cache[i]['name'] == package_name) {
 					package_path = package_cache[i]['path'];
+					break;
+				}
+			}
+			callback(package_path);
+		});
+	}
+
+	that.getPackageCodePath = function(package_name, callback) {
+		that.getPackageList((package_cache) => {
+			var package_path = undefined;
+			for (var i=0; i<package_cache.length; i++) {
+				if (package_cache[i]['name'] == package_name) {
+					package_path = package_cache[i]['code_path'];
 					break;
 				}
 			}

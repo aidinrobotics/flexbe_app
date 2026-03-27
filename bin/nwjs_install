@@ -5,7 +5,7 @@ mkdir -p nwjs
 cd nwjs
 
 # VERSION="v0.42.3" # verified working, to be incremented explicitly
-VERSION="v0.55.0"
+VERSION="v0.102.0"
 # check if nw is already existing and up-to-date, abort if so
 if [ -f nw ]; then
 	if [ -f version ] && [ "$(cat version)" == "$VERSION" ]; then
@@ -37,7 +37,8 @@ fi
 
 # ready to go
 echo "Downloading nwjs..."
-curl -s -o $TEMPFILE https://dl.nwjs.io/$VERSION/nwjs-$VERSION-$OS-$ARCH.tar.gz
+#curl -s -o $TEMPFILE https://dl.nwjs.io/$VERSION/nwjs-$VERSION-$OS-$ARCH.tar.gz
+wget -O nwjs.tar.gz https://dl.nwjs.io/$VERSION/nwjs-$VERSION-$OS-$ARCH.tar.gz
 
 echo "Unpacking..."
 tar -xvf $TEMPFILE --strip-components 1
