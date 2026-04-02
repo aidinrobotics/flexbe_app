@@ -1,4 +1,23 @@
 #!/bin/bash
+# Fewer AT-SPI / a11y dbus round-trips when there is no session bus.
+export NO_AT_BRIDGE=1
+
+# Empty DBUS_SESSION_BUS_ADDRESS breaks Chromium ("Unknown address type"); use user session socket if present.
+if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ]; then
+  unset DBUS_SESSION_BUS_ADDRESS
+  _u=/run/user/$(id -u)/bus
+  if [ -S "$_u" ]; then
+    export DBUS_SESSION_BUS_ADDRESS="unix:path=$_u"
+  fi
+fi
+
+# Nouveau/DRI3 + ANGLE EGL failures: software GL + disable Chromium GPU process. Override with FLEXBE_GL_WORKAROUND=0.
+NW_EXTRA=(--password-store=basic)
+if [ "${FLEXBE_GL_WORKAROUND:-1}" != "0" ]; then
+  export LIBGL_ALWAYS_SOFTWARE=1
+  NW_EXTRA+=(--disable-gpu --disable-dev-shm-usage)
+fi
+
 ROOT_PATH="$(ros2 pkg prefix flexbe_app)"/lib/flexbe_app
 NW=$ROOT_PATH/nwjs/nw
 if [ ! -f $NW ]; then
@@ -13,4 +32,4 @@ if [ ! -x $NW ]; then
 fi
 
 echo "Running FlexBE App @ $ROOT_PATH $@ ..."
-"$NW" --password-store=basic $ROOT_PATH "$@"
+"$NW" "${NW_EXTRA[@]}" $ROOT_PATH "$@"
